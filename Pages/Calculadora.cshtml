@@ -1,0 +1,509 @@
+@page
+@model CalculadoraModel
+@{
+    ViewData["Title"] = "Calculadora de Costos de Infraestructura";
+}
+
+<!-- Boxicons CDN -->
+<link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card p-4 mb-4">
+            <h2 class="mb-4"><i class="bx bx-calculator"></i> Calculadora</h2>
+
+            <!-- Barra de iconos para activar grupos de items -->
+            <div class="mb-4 d-flex gap-3 align-items-center" id="resource-bar">
+                <button type="button" class="btn btn-outline-secondary resource-btn active" data-target="vm-modules" title="Máquinas Virtuales">
+                    <i class="bx bx-server"></i> VM
+                </button>
+                <button type="button" class="btn btn-outline-secondary resource-btn @(Model.Config.Databases.Any() ? "active" : "")" data-target="db-modules" title="Bases de Datos">
+                    <i class="bx bx-data"></i> BD
+                </button>
+                <button type="button" class="btn btn-outline-secondary resource-btn @(Model.Config.Storages.Any() ? "active" : "")" data-target="storage-modules" title="Almacenamiento">
+                    <i class="bx bx-hdd"></i> Disco
+                </button>
+                <button type="button" class="btn btn-outline-secondary resource-btn @(Model.Config.Firewalls.Any() ? "active" : "")" data-target="firewall-modules" title="Firewall">
+                    <i class="bx bx-shield"></i> FW
+                </button>
+                <button type="button" class="btn btn-outline-secondary resource-btn @(Model.Config.LoadBalancers.Any() ? "active" : "")" data-target="lb-modules" title="Balanceador">
+                    <i class="bx bx-git-branch"></i> LB
+                </button>
+                <button type="button" class="btn btn-outline-secondary resource-btn @(Model.Config.PublicIPs.Any() ? "active" : "")" data-target="ip-modules" title="IP Pública">
+                    <i class="bx bx-globe"></i> IP
+                </button>
+                <button type="button" class="btn btn-outline-secondary resource-btn @(Model.Config.Networks.Any() ? "active" : "")" data-target="network-modules" title="Red Virtual">
+                    <i class="bx bx-network-chart"></i> Red
+                </button>
+            </div>
+
+            <form method="post" id="calcForm" autocomplete="off">
+                <div id="vm-modules" class="resource-section">
+                    <h5><i class="bx bx-server text-primary"></i> Máquinas Virtuales</h5>
+                    @for (int i = 0; i < Model.Config.VMs.Count; i++)
+                    {
+                        <div class="row align-items-end mb-2 vm-item" data-index="@i">
+                            <div class="col-md-5">
+                                <label class="form-label">Tipo</label>
+                                <select class="form-select" name="Config.VMs[@i].VMType" required>
+                                    <option value="Standard" selected="@((Model.Config.VMs[i].VMType == "Standard") ? "selected" : null)">Standard</option>
+                                    <option value="Premium" selected="@((Model.Config.VMs[i].VMType == "Premium") ? "selected" : null)">Premium</option>
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label">Cantidad</label>
+                                <input class="form-control" type="number" name="Config.VMs[@i].VMCount" min="1" value="@Model.Config.VMs[i].VMCount" required />
+                            </div>
+                            <div class="col-md-2 text-end">
+                                <span class="badge bg-info text-dark vm-cost" data-desc="VM @(Model.Config.VMs[i].VMType) x@(Model.Config.VMs[i].VMCount)"></span>
+                                <button type="button" class="btn btn-outline-danger btn-sm remove-vm" title="Eliminar VM">✕</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <button type="button" class="btn btn-outline-primary btn-sm mb-3" id="add-vm">Agregar VM</button>
+
+                <div id="db-modules" class="mt-4 resource-section" style="display:@(Model.Config.Databases.Any() ? "block" : "none")">
+                    <h5><i class="bx bx-data text-info"></i> Bases de Datos</h5>
+                    @for (int i = 0; i < Model.Config.Databases.Count; i++)
+                    {
+                        <div class="row align-items-end mb-2 db-item" data-index="@i">
+                            <div class="col-md-5">
+                                <label class="form-label">Tipo</label>
+                                <select class="form-select" name="Config.Databases[@i].DatabaseType" required>
+                                    <option value="SQL" selected="@((Model.Config.Databases[i].DatabaseType == "SQL") ? "selected" : null)">SQL</option>
+                                    <option value="NoSQL" selected="@((Model.Config.Databases[i].DatabaseType == "NoSQL") ? "selected" : null)">NoSQL</option>
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label">Cantidad</label>
+                                <input class="form-control" type="number" name="Config.Databases[@i].DatabaseCount" min="1" value="@Model.Config.Databases[i].DatabaseCount" required />
+                            </div>
+                            <div class="col-md-2 text-end">
+                                <span class="badge bg-info text-dark db-cost" data-desc="DB @(Model.Config.Databases[i].DatabaseType) x@(Model.Config.Databases[i].DatabaseCount)"></span>
+                                <button type="button" class="btn btn-outline-danger btn-sm remove-db" title="Eliminar BD">✕</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <button type="button" class="btn btn-outline-primary btn-sm mb-3" id="add-db" style="display:@(Model.Config.Databases.Any() ? "inline-block" : "none")">Agregar Base de Datos</button>
+
+                <div id="storage-modules" class="mt-4 resource-section" style="display:@(Model.Config.Storages.Any() ? "block" : "none")">
+                    <h5><i class="bx bx-hdd text-secondary"></i> Almacenamiento</h5>
+                    @for (int i = 0; i < Model.Config.Storages.Count; i++)
+                    {
+                        <div class="row align-items-end mb-2 storage-item" data-index="@i">
+                            <div class="col-md-6">
+                                <label class="form-label">Tipo</label>
+                                <select class="form-select" name="Config.Storages[@i].StorageType" required>
+                                    <option value="SSD" selected="@((Model.Config.Storages[i].StorageType == "SSD") ? "selected" : null)">SSD</option>
+                                    <option value="HDD" selected="@((Model.Config.Storages[i].StorageType == "HDD") ? "selected" : null)">HDD</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Tamaño (GB)</label>
+                                <input class="form-control" type="number" name="Config.Storages[@i].StorageSizeGB" min="1" value="@Model.Config.Storages[i].StorageSizeGB" required />
+                            </div>
+                            <div class="col-md-2 text-end">
+                                <span class="badge bg-info text-dark storage-cost" data-desc="Storage @(Model.Config.Storages[i].StorageType) x@(Model.Config.Storages[i].StorageSizeGB)GB"></span>
+                                <button type="button" class="btn btn-outline-danger btn-sm remove-storage" title="Eliminar Disco">✕</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <button type="button" class="btn btn-outline-primary btn-sm mb-3" id="add-storage" style="display:@(Model.Config.Storages.Any() ? "inline-block" : "none")">Agregar Disco</button>
+
+                <div id="firewall-modules" class="mt-4 resource-section" style="display:@(Model.Config.Firewalls.Any() ? "block" : "none")">
+                    <h5><i class="bx bx-shield text-danger"></i> Firewalls</h5>
+                    @for (int i = 0; i < Model.Config.Firewalls.Count; i++)
+                    {
+                        <div class="row align-items-end mb-2 firewall-item" data-index="@i">
+                            <div class="col-md-5">
+                                <label class="form-label">Tipo</label>
+                                <select class="form-select" name="Config.Firewalls[@i].FirewallType" required>
+                                    <option value="Standard" selected="@((Model.Config.Firewalls[i].FirewallType == "Standard") ? "selected" : null)">Standard</option>
+                                    <option value="NextGen" selected="@((Model.Config.Firewalls[i].FirewallType == "NextGen") ? "selected" : null)">NextGen</option>
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label">Cantidad</label>
+                                <input class="form-control" type="number" name="Config.Firewalls[@i].FirewallCount" min="1" value="@Model.Config.Firewalls[i].FirewallCount" required />
+                            </div>
+                            <div class="col-md-2 text-end">
+                                <span class="badge bg-info text-dark firewall-cost" data-desc="Firewall @(Model.Config.Firewalls[i].FirewallType) x@(Model.Config.Firewalls[i].FirewallCount)"></span>
+                                <button type="button" class="btn btn-outline-danger btn-sm remove-firewall" title="Eliminar Firewall">✕</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <button type="button" class="btn btn-outline-primary btn-sm mb-3" id="add-firewall" style="display:@(Model.Config.Firewalls.Any() ? "inline-block" : "none")">Agregar Firewall</button>
+
+                <div id="lb-modules" class="mt-4 resource-section" style="display:@(Model.Config.LoadBalancers.Any() ? "block" : "none")">
+                    <h5><i class="bx bx-git-branch text-success"></i> Balanceadores de Carga</h5>
+                    @for (int i = 0; i < Model.Config.LoadBalancers.Count; i++)
+                    {
+                        <div class="row align-items-end mb-2 lb-item" data-index="@i">
+                            <div class="col-md-5">
+                                <label class="form-label">Tipo</label>
+                                <select class="form-select" name="Config.LoadBalancers[@i].LoadBalancerType" required>
+                                    <option value="Network" selected="@((Model.Config.LoadBalancers[i].LoadBalancerType == "Network") ? "selected" : null)">Network</option>
+                                    <option value="App" selected="@((Model.Config.LoadBalancers[i].LoadBalancerType == "App") ? "selected" : null)">App</option>
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label">Cantidad</label>
+                                <input class="form-control" type="number" name="Config.LoadBalancers[@i].LoadBalancerCount" min="1" value="@Model.Config.LoadBalancers[i].LoadBalancerCount" required />
+                            </div>
+                            <div class="col-md-2 text-end">
+                                <span class="badge bg-info text-dark lb-cost" data-desc="Load Balancer @(Model.Config.LoadBalancers[i].LoadBalancerType) x@(Model.Config.LoadBalancers[i].LoadBalancerCount)"></span>
+                                <button type="button" class="btn btn-outline-danger btn-sm remove-lb" title="Eliminar LB">✕</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <button type="button" class="btn btn-outline-primary btn-sm mb-3" id="add-lb" style="display:@(Model.Config.LoadBalancers.Any() ? "inline-block" : "none")">Agregar Balanceador</button>
+
+                <div id="ip-modules" class="mt-4 resource-section" style="display:@(Model.Config.PublicIPs.Any() ? "block" : "none")">
+                    <h5><i class="bx bx-globe text-warning"></i> IPs Públicas</h5>
+                    @for (int i = 0; i < Model.Config.PublicIPs.Count; i++)
+                    {
+                        <div class="row align-items-end mb-2 ip-item" data-index="@i">
+                            <div class="col-md-10">
+                                <label class="form-label">Cantidad</label>
+                                <input class="form-control" type="number" name="Config.PublicIPs[@i].PublicIPCount" min="1" value="@Model.Config.PublicIPs[i].PublicIPCount" required />
+                            </div>
+                            <div class="col-md-2 text-end">
+                                <span class="badge bg-info text-dark ip-cost" data-desc="IP Pública x@(Model.Config.PublicIPs[i].PublicIPCount)"></span>
+                                <button type="button" class="btn btn-outline-danger btn-sm remove-ip" title="Eliminar IP">✕</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <button type="button" class="btn btn-outline-primary btn-sm mb-3" id="add-ip" style="display:@(Model.Config.PublicIPs.Any() ? "inline-block" : "none")">Agregar IP Pública</button>
+
+                <div id="network-modules" class="mt-4 resource-section" style="display:@(Model.Config.Networks.Any() ? "block" : "none")">
+                    <h5><i class="bx bx-network-chart text-dark"></i> Redes Virtuales</h5>
+                    @for (int i = 0; i < Model.Config.Networks.Count; i++)
+                    {
+                        <div class="row align-items-end mb-2 network-item" data-index="@i">
+                            <div class="col-md-10">
+                                <label class="form-label">Cantidad</label>
+                                <input class="form-control" type="number" name="Config.Networks[@i].NetworkCount" min="1" value="@Model.Config.Networks[i].NetworkCount" required />
+                            </div>
+                            <div class="col-md-2 text-end">
+                                <span class="badge bg-info text-dark network-cost" data-desc="Red Virtual x@(Model.Config.Networks[i].NetworkCount)"></span>
+                                <button type="button" class="btn btn-outline-danger btn-sm remove-network" title="Eliminar Red">✕</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <button type="button" class="btn btn-outline-primary btn-sm mb-3" id="add-network" style="display:@(Model.Config.Networks.Any() ? "inline-block" : "none")">Agregar Red Virtual</button>
+
+                <div class="mt-4">
+                    <h5><i class="bx bx-cog text-secondary"></i> Servicios Adicionales</h5>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" asp-for="Config.Backup" id="backupSwitch" />
+                        <label class="form-check-label" for="backupSwitch">Backup</label>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" asp-for="Config.Monitoring" id="monitoringSwitch" />
+                        <label class="form-check-label" for="monitoringSwitch">Monitoreo</label>
+                    </div>
+                </div>
+
+                <div class="mt-4 position-relative">
+                    <div id="no-items-warning" class="alert alert-warning py-2 px-3 mb-3 d-none" role="alert" style="position:absolute;left:0;right:0;top:-50px;z-index:2;">
+                        <i class="bx bx-error-circle"></i> No hay items seleccionados, por favor agregue al menos un recurso antes de calcular.
+                    </div>
+                    <button type="submit" class="btn btn-success btn-lg">Calcular Total</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="cost-details">
+        @await Html.PartialAsync("_CostDetails", Model)
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Utilidad para serializar el form
+    function serializeForm(form) {
+        const formData = new FormData(form);
+        return new URLSearchParams(formData).toString();
+    }
+
+    function updateCostDetails(html) {
+        document.getElementById('cost-details').innerHTML = html;
+    }
+
+    function triggerAjaxCalculation() {
+        const form = document.getElementById('calcForm');
+        fetch('@Url.Page("Calculadora", "CalcularAjax")', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: serializeForm(form)
+        })
+        .then(resp => resp.text())
+        .then(html => updateCostDetails(html));
+    }
+
+    // Agregar módulos dinámicamente
+    function addModule(containerId, template) {
+        const container = document.getElementById(containerId);
+        const idx = container.querySelectorAll('.row').length;
+        const html = template.replace(/__INDEX__/g, idx);
+        container.insertAdjacentHTML('beforeend', html);
+    }
+
+    // Handlers para agregar items
+    document.getElementById('add-vm').addEventListener('click', function () {
+        const template = `
+        <div class="row align-items-end mb-2 vm-item" data-index="__INDEX__">
+            <div class="col-md-5">
+                <label class="form-label">Tipo</label>
+                <select class="form-select" name="Config.VMs[__INDEX__].VMType" required>
+                    <option value="Standard">Standard</option>
+                    <option value="Premium">Premium</option>
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">Cantidad</label>
+                <input class="form-control" type="number" name="Config.VMs[__INDEX__].VMCount" min="1" value="1" required />
+            </div>
+            <div class="col-md-2 text-end">
+                <span class="badge bg-info text-dark vm-cost" data-desc="VM Standard x1"></span>
+                <button type="button" class="btn btn-outline-danger btn-sm remove-vm" title="Eliminar VM">✕</button>
+            </div>
+        </div>`;
+        addModule('vm-modules', template);
+        triggerAjaxCalculation();
+    });
+    document.getElementById('add-db').addEventListener('click', function () {
+        const template = `
+        <div class="row align-items-end mb-2 db-item" data-index="__INDEX__">
+            <div class="col-md-5">
+                <label class="form-label">Tipo</label>
+                <select class="form-select" name="Config.Databases[__INDEX__].DatabaseType" required>
+                    <option value="SQL">SQL</option>
+                    <option value="NoSQL">NoSQL</option>
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">Cantidad</label>
+                <input class="form-control" type="number" name="Config.Databases[__INDEX__].DatabaseCount" min="1" value="1" required />
+            </div>
+            <div class="col-md-2 text-end">
+                <span class="badge bg-info text-dark db-cost" data-desc="DB SQL x1"></span>
+                <button type="button" class="btn btn-outline-danger btn-sm remove-db" title="Eliminar BD">✕</button>
+            </div>
+        </div>`;
+        addModule('db-modules', template);
+        triggerAjaxCalculation();
+    });
+    document.getElementById('add-storage').addEventListener('click', function () {
+        const template = `
+        <div class="row align-items-end mb-2 storage-item" data-index="__INDEX__">
+            <div class="col-md-6">
+                <label class="form-label">Tipo</label>
+                <select class="form-select" name="Config.Storages[__INDEX__].StorageType" required>
+                    <option value="SSD">SSD</option>
+                    <option value="HDD">HDD</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Tamaño (GB)</label>
+                <input class="form-control" type="number" name="Config.Storages[__INDEX__].StorageSizeGB" min="1" value="100" required />
+            </div>
+            <div class="col-md-2 text-end">
+                <span class="badge bg-info text-dark storage-cost" data-desc="Storage SSD x100GB"></span>
+                <button type="button" class="btn btn-outline-danger btn-sm remove-storage" title="Eliminar Disco">✕</button>
+            </div>
+        </div>`;
+        addModule('storage-modules', template);
+        triggerAjaxCalculation();
+    });
+    document.getElementById('add-firewall').addEventListener('click', function () {
+        const template = `
+        <div class="row align-items-end mb-2 firewall-item" data-index="__INDEX__">
+            <div class="col-md-5">
+                <label class="form-label">Tipo</label>
+                <select class="form-select" name="Config.Firewalls[__INDEX__].FirewallType" required>
+                    <option value="Standard">Standard</option>
+                    <option value="NextGen">NextGen</option>
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">Cantidad</label>
+                <input class="form-control" type="number" name="Config.Firewalls[__INDEX__].FirewallCount" min="1" value="1" required />
+            </div>
+            <div class="col-md-2 text-end">
+                <span class="badge bg-info text-dark firewall-cost" data-desc="Firewall Standard x1"></span>
+                <button type="button" class="btn btn-outline-danger btn-sm remove-firewall" title="Eliminar Firewall">✕</button>
+            </div>
+        </div>`;
+        addModule('firewall-modules', template);
+        triggerAjaxCalculation();
+    });
+    document.getElementById('add-lb').addEventListener('click', function () {
+        const template = `
+        <div class="row align-items-end mb-2 lb-item" data-index="__INDEX__">
+            <div class="col-md-5">
+                <label class="form-label">Tipo</label>
+                <select class="form-select" name="Config.LoadBalancers[__INDEX__].LoadBalancerType" required>
+                    <option value="Network">Network</option>
+                    <option value="App">App</option>
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">Cantidad</label>
+                <input class="form-control" type="number" name="Config.LoadBalancers[__INDEX__].LoadBalancerCount" min="1" value="1" required />
+            </div>
+            <div class="col-md-2 text-end">
+                <span class="badge bg-info text-dark lb-cost" data-desc="Load Balancer Network x1"></span>
+                <button type="button" class="btn btn-outline-danger btn-sm remove-lb" title="Eliminar LB">✕</button>
+            </div>
+        </div>`;
+        addModule('lb-modules', template);
+        triggerAjaxCalculation();
+    });
+    document.getElementById('add-ip').addEventListener('click', function () {
+        const template = `
+        <div class="row align-items-end mb-2 ip-item" data-index="__INDEX__">
+            <div class="col-md-10">
+                <label class="form-label">Cantidad</label>
+                <input class="form-control" type="number" name="Config.PublicIPs[__INDEX__].PublicIPCount" min="1" value="1" required />
+            </div>
+            <div class="col-md-2 text-end">
+                <span class="badge bg-info text-dark ip-cost" data-desc="IP Pública x1"></span>
+                <button type="button" class="btn btn-outline-danger btn-sm remove-ip" title="Eliminar IP">✕</button>
+            </div>
+        </div>`;
+        addModule('ip-modules', template);
+        triggerAjaxCalculation();
+    });
+    document.getElementById('add-network').addEventListener('click', function () {
+        const template = `
+        <div class="row align-items-end mb-2 network-item" data-index="__INDEX__">
+            <div class="col-md-10">
+                <label class="form-label">Cantidad</label>
+                <input class="form-control" type="number" name="Config.Networks[__INDEX__].NetworkCount" min="1" value="1" required />
+            </div>
+            <div class="col-md-2 text-end">
+                <span class="badge bg-info text-dark network-cost" data-desc="Red Virtual x1"></span>
+                <button type="button" class="btn btn-outline-danger btn-sm remove-network" title="Eliminar Red">✕</button>
+            </div>
+        </div>`;
+        addModule('network-modules', template);
+        triggerAjaxCalculation();
+    });
+
+    // Handlers para eliminar items
+    document.getElementById('vm-modules').addEventListener('click', function (e) {
+        if (e.target.classList.contains('remove-vm')) {
+            e.target.closest('.vm-item').remove();
+            triggerAjaxCalculation();
+        }
+    });
+    document.getElementById('db-modules').addEventListener('click', function (e) {
+        if (e.target.classList.contains('remove-db')) {
+            e.target.closest('.db-item').remove();
+            triggerAjaxCalculation();
+        }
+    });
+    document.getElementById('storage-modules').addEventListener('click', function (e) {
+        if (e.target.classList.contains('remove-storage')) {
+            e.target.closest('.storage-item').remove();
+            triggerAjaxCalculation();
+        }
+    });
+    document.getElementById('firewall-modules').addEventListener('click', function (e) {
+        if (e.target.classList.contains('remove-firewall')) {
+            e.target.closest('.firewall-item').remove();
+            triggerAjaxCalculation();
+        }
+    });
+    document.getElementById('lb-modules').addEventListener('click', function (e) {
+        if (e.target.classList.contains('remove-lb')) {
+            e.target.closest('.lb-item').remove();
+            triggerAjaxCalculation();
+        }
+    });
+    document.getElementById('ip-modules').addEventListener('click', function (e) {
+        if (e.target.classList.contains('remove-ip')) {
+            e.target.closest('.ip-item').remove();
+            triggerAjaxCalculation();
+        }
+    });
+    document.getElementById('network-modules').addEventListener('click', function (e) {
+        if (e.target.classList.contains('remove-network')) {
+            e.target.closest('.network-item').remove();
+            triggerAjaxCalculation();
+        }
+    });
+
+    // Validación de cantidad (entero positivo) y advertencia si no hay items
+    function hasAnyItem() {
+        return (
+            document.querySelectorAll('#vm-modules .row').length > 0 ||
+            document.querySelectorAll('#db-modules .row').length > 0 ||
+            document.querySelectorAll('#storage-modules .row').length > 0 ||
+            document.querySelectorAll('#firewall-modules .row').length > 0 ||
+            document.querySelectorAll('#lb-modules .row').length > 0 ||
+            document.querySelectorAll('#ip-modules .row').length > 0 ||
+            document.querySelectorAll('#network-modules .row').length > 0
+        );
+    }
+
+    document.getElementById('calcForm').addEventListener('submit', function (e) {
+        let valid = true;
+        this.querySelectorAll('input[type="number"]').forEach(function (input) {
+            if (parseInt(input.value) < 1 || !Number.isInteger(Number(input.value))) {
+                input.classList.add('is-invalid');
+                valid = false;
+            } else {
+                input.classList.remove('is-invalid');
+            }
+        });
+        if (!hasAnyItem()) {
+            document.getElementById('no-items-warning').classList.remove('d-none');
+            valid = false;
+        } else {
+            document.getElementById('no-items-warning').classList.add('d-none');
+        }
+        if (!valid) {
+            e.preventDefault();
+        }
+    });
+
+    // AJAX en cambios de campos
+    document.getElementById('calcForm').addEventListener('input', function (e) {
+        triggerAjaxCalculation();
+        if (hasAnyItem()) {
+            document.getElementById('no-items-warning').classList.add('d-none');
+        }
+    });
+
+    // Barra de iconos: mostrar/ocultar secciones
+    document.querySelectorAll('.resource-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const target = this.getAttribute('data-target');
+            const section = document.getElementById(target);
+            const addBtn = document.getElementById('add-' + target.split('-')[0]);
+            if (section.style.display === 'none' || section.style.display === '') {
+                section.style.display = 'block';
+                if (addBtn) addBtn.style.display = 'inline-block';
+                this.classList.add('active');
+            } else {
+                section.style.display = 'none';
+                if (addBtn) addBtn.style.display = 'none';
+                this.classList.remove('active');
+                // Elimina todos los items del grupo al ocultar
+                section.querySelectorAll('.row').forEach(row => row.remove());
+                triggerAjaxCalculation();
+            }
+        });
+    });
+</script>
+}

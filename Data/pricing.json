@@ -1,0 +1,16 @@
+{
+  "VMTypes": {
+    "Standard": 100,
+    "Premium": 200
+  },
+  "DatabaseTypes": {
+    "SQL": 200,
+    "NoSQL": 150
+  },
+  "StorageTypes": {
+    "SSD": 0.1,
+    "HDD": 0.05
+  },
+  "Backup": 50,
+  "Monitoring": 30
+}

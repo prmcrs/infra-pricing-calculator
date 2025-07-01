@@ -1,0 +1,18 @@
+@model infra_pricing_calculator.Pages.CalculadoraModel
+
+@if (Model.ItemCosts != null && Model.ItemCosts.Any())
+{
+    <div class="card p-3 mb-4">
+        <h4>Detalle de Costos</h4>
+        <ul class="list-group mb-3">
+            @foreach (var item in Model.ItemCosts)
+            {
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    @item.Description
+                    <span class="fw-bold">@item.Cost.ToString("C")</span>
+                </li>
+            }
+        </ul>
+        <h5 class="text-end">Total: <span class="fw-bold">@Model.TotalCost.ToString("C")</span></h5>
+    </div>
+}

@@ -1,0 +1,18 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Inicio";
+}
+
+<div class="row justify-content-center align-items-center" style="min-height:60vh;">
+    <div class="col-lg-7 text-center">
+        <div class="card shadow-lg p-5 border-0" style="background:rgba(255,255,255,0.95);">
+            <h1 class="display-4 mb-3 fw-bold text-gradient" style="background: linear-gradient(90deg,#0d6efd,#6610f2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Pricing Calculator</h1>
+            <p class="lead mb-4">
+                Simula y estima el costo mensual de infraestructura tecnológica.<br>
+                Agrega, configura y compara recursos como máquinas virtuales, bases de datos y almacenamiento de forma simple y visual.
+            </p>
+            <a class="btn btn-lg btn-primary px-5" asp-page="/Calculadora">Ir a la Calculadora</a>
+        </div>
+    </div>
+</div>
